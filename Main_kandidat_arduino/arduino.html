@@ -1,0 +1,341 @@
+<pre>
+<font color="#5e6d03">#include</font> <font color="#434f54">&lt;</font><b><font color="#d35400">SoftwareSerial</font></b><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+<font color="#95a5a6">&#47;*</font>
+<font color="#95a5a6"> &nbsp;&nbsp;All the resources for this project: </font><u><font color="#95a5a6">https:&#47;&#47;randomnerdtutorials.com&#47;</font></u><font color="#95a5a6"></font>
+<font color="#95a5a6"> &nbsp;&nbsp;Modified by Andreas Jackson</font>
+<font color="#95a5a6"> &nbsp;&nbsp;Created by FILIPEFLOP</font>
+<font color="#95a5a6">*&#47;</font>
+<font color="#5e6d03">#include</font> <font color="#434f54">&lt;</font><b><font color="#d35400">SPI</font></b><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+<font color="#5e6d03">#include</font> <font color="#434f54">&lt;</font><b><font color="#d35400">MFRC522</font></b><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+<font color="#5e6d03">#include</font> <font color="#434f54">&lt;</font><font color="#d35400">Wire</font><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+<font color="#5e6d03">#include</font> <font color="#005c5f">&#34;Adafruit_TCS34725.h&#34;</font>
+<font color="#5e6d03">#define</font> <font color="#000000">SS_PIN</font> <font color="#000000">10</font>
+<font color="#5e6d03">#define</font> <font color="#000000">RST_PIN</font> <font color="#000000">9</font>
+<b><font color="#d35400">MFRC522</font></b> <font color="#000000">mfrc522</font><font color="#000000">(</font><font color="#000000">SS_PIN</font><font color="#434f54">,</font> <font color="#000000">RST_PIN</font><font color="#000000">)</font><font color="#000000">;</font> &nbsp;&nbsp;<font color="#434f54">&#47;&#47; Create MFRC522 instance.</font>
+<font color="#5e6d03">#define</font> <font color="#000000">N_TAGS</font> <font color="#000000">36</font>
+<font color="#5e6d03">#define</font> <font color="#000000">BUF_LEN</font> <font color="#000000">4</font>
+<font color="#5e6d03">#define</font> <font color="#000000">ERROR_MSG</font> <font color="#00979c">&#39;+&#39;</font>
+<font color="#5e6d03">#define</font> <font color="#000000">RIGHT</font> <font color="#00979c">&#39;&gt;&#39;</font>
+<font color="#5e6d03">#define</font> <font color="#000000">LEFT</font> <font color="#00979c">&#39;&lt;&#39;</font>
+<font color="#5e6d03">#define</font> <font color="#000000">STOP_BLINK</font> <font color="#00979c">&#39;s&#39;</font>
+<font color="#5e6d03">#define</font> <font color="#000000">LED_LEFT_PIN</font> <font color="#000000">7</font>
+<font color="#5e6d03">#define</font> <font color="#000000">LED_RIGHT_PIN</font> <font color="#000000">8</font>
+
+<font color="#00979c">unsigned</font> <font color="#00979c">long</font> <font color="#000000">previousMillis</font> <font color="#434f54">=</font> <font color="#000000">0</font><font color="#000000">;</font>
+<font color="#00979c">unsigned</font> <font color="#00979c">long</font> <font color="#000000">currentMillis</font> <font color="#434f54">=</font> <font color="#d35400">millis</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+<font color="#00979c">const</font> <font color="#00979c">long</font> <font color="#000000">interval</font> <font color="#434f54">=</font> <font color="#000000">400</font><font color="#000000">;</font>
+
+<font color="#00979c">uint8_t</font> <font color="#000000">RFIDtagHEX</font><font color="#000000">[</font><font color="#000000">N_TAGS</font><font color="#000000">]</font><font color="#000000">[</font><font color="#000000">4</font><font color="#000000">]</font><font color="#434f54">=</font><font color="#000000">{</font><font color="#000000">{</font><font color="#000000">0xC0</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xC3</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xB8</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x98</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xA3</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xC4</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x0A</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x1</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xFC</font><font color="#434f54">,</font><font color="#000000">0x11</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xCE</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xDF</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xDC</font><font color="#434f54">,</font><font color="#000000">0x11</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x19</font><font color="#434f54">,</font><font color="#000000">0x11</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x1</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xE2</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x9D</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xA5</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xAF</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xBF</font><font color="#434f54">,</font><font color="#000000">0x11</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xFB</font><font color="#434f54">,</font><font color="#000000">0x11</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xE4</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xC3</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xEC</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xC4</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x99</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xBA</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x1A</font><font color="#434f54">,</font><font color="#000000">0x11</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x1</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x87</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xCD</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xC1</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x01</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x1</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x86</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x04</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x1</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xA4</font><font color="#434f54">,</font><font color="#000000">0x0F</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xA5</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xFE</font><font color="#434f54">,</font><font color="#000000">0x0E</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0xA4</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x3</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#434f54">,</font> <font color="#000000">{</font><font color="#000000">0x9C</font><font color="#434f54">,</font><font color="#000000">0x10</font><font color="#434f54">,</font><font color="#000000">0x4</font><font color="#434f54">,</font><font color="#000000">0x0</font><font color="#000000">}</font><font color="#000000">}</font><font color="#000000">;</font>
+<font color="#00979c">String</font> <font color="#000000">commonID</font><font color="#000000">[</font><font color="#000000">4</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">{</font><font color="#005c5f">&#34;04 &#34;</font><font color="#434f54">,</font> <font color="#005c5f">&#34; &#34;</font><font color="#434f54">,</font> <font color="#005c5f">&#34; &#34;</font><font color="#434f54">,</font> <font color="#005c5f">&#34;2 8B 5F 8&#34;</font><font color="#000000">}</font><font color="#000000">;</font>
+<font color="#00979c">uint8_t</font> <font color="#000000">IDnamn</font><font color="#000000">[</font><font color="#000000">36</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">{</font><font color="#000000">11</font><font color="#434f54">,</font> <font color="#000000">12</font><font color="#434f54">,</font> <font color="#000000">13</font><font color="#434f54">,</font> <font color="#000000">14</font><font color="#434f54">,</font> <font color="#000000">21</font><font color="#434f54">,</font> <font color="#000000">22</font><font color="#434f54">,</font> <font color="#000000">23</font><font color="#434f54">,</font> <font color="#000000">24</font><font color="#434f54">,</font> <font color="#000000">25</font><font color="#434f54">,</font> <font color="#000000">26</font><font color="#434f54">,</font> <font color="#000000">27</font><font color="#434f54">,</font> <font color="#000000">31</font><font color="#434f54">,</font> <font color="#000000">32</font><font color="#434f54">,</font> <font color="#000000">33</font><font color="#434f54">,</font> <font color="#000000">34</font><font color="#434f54">,</font> <font color="#000000">35</font><font color="#434f54">,</font> <font color="#000000">36</font><font color="#434f54">,</font> <font color="#000000">37</font><font color="#434f54">,</font> <font color="#000000">41</font><font color="#434f54">,</font> <font color="#000000">42</font><font color="#434f54">,</font> <font color="#000000">43</font><font color="#434f54">,</font> <font color="#000000">44</font><font color="#434f54">,</font> <font color="#000000">45</font><font color="#434f54">,</font> <font color="#000000">46</font><font color="#434f54">,</font> <font color="#000000">51</font><font color="#434f54">,</font> <font color="#000000">52</font><font color="#434f54">,</font> <font color="#000000">53</font><font color="#434f54">,</font> <font color="#000000">54</font><font color="#434f54">,</font> <font color="#000000">55</font><font color="#434f54">,</font> <font color="#000000">56</font><font color="#434f54">,</font> <font color="#000000">61</font><font color="#434f54">,</font> <font color="#000000">62</font><font color="#434f54">,</font> <font color="#000000">63</font><font color="#434f54">,</font> <font color="#000000">64</font><font color="#434f54">,</font> <font color="#000000">65</font><font color="#434f54">,</font> <font color="#000000">66</font><font color="#000000">}</font><font color="#000000">;</font>
+
+<font color="#00979c">char</font> <font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">BUF_LEN</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">{</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#434f54">,</font> <font color="#00979c">&#39;\n&#39;</font><font color="#000000">}</font><font color="#000000">;</font>
+<font color="#00979c">char</font> <font color="#000000">oldTxBuffer</font><font color="#000000">[</font><font color="#000000">BUF_LEN</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">{</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#434f54">,</font> <font color="#00979c">&#39;\n&#39;</font><font color="#000000">}</font><font color="#000000">;</font>
+<font color="#00979c">int</font> <font color="#000000">noCardCounter</font><font color="#434f54">=</font><font color="#000000">0</font><font color="#000000">;</font>
+<font color="#00979c">bool</font> <font color="#000000">rightLedState</font> <font color="#434f54">=</font> <font color="#00979c">HIGH</font><font color="#000000">;</font>
+<font color="#00979c">bool</font> <font color="#000000">leftLedState</font> <font color="#434f54">=</font> <font color="#00979c">HIGH</font><font color="#000000">;</font>
+<font color="#00979c">int</font> <font color="#000000">blinkState</font> <font color="#434f54">=</font> <font color="#000000">0</font><font color="#000000">;</font>
+<font color="#00979c">bool</font> <font color="#000000">RFID_blink</font><font color="#434f54">=</font><font color="#00979c">false</font><font color="#000000">;</font>
+<font color="#000000">Adafruit_TCS34725</font> <font color="#000000">tcs</font> <font color="#434f54">=</font> <font color="#000000">Adafruit_TCS34725</font><font color="#000000">(</font><font color="#000000">TCS34725_INTEGRATIONTIME_24MS</font><font color="#434f54">,</font> <font color="#000000">TCS34725_GAIN_1X</font><font color="#000000">)</font><font color="#000000">;</font>
+<b><font color="#d35400">SoftwareSerial</font></b> <font color="#000000">mySerial</font><font color="#000000">(</font><font color="#000000">4</font><font color="#434f54">,</font> <font color="#000000">3</font><font color="#000000">)</font><font color="#000000">;</font>
+<font color="#434f54">&#47;&#47;String resultString, resultString2;</font>
+
+<font color="#00979c">void</font> <font color="#5e6d03">setup</font><font color="#000000">(</font><font color="#00979c">void</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#d35400">pinMode</font><font color="#000000">(</font><font color="#000000">LED_LEFT_PIN</font><font color="#434f54">,</font><font color="#00979c">OUTPUT</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">pinMode</font><font color="#000000">(</font><font color="#000000">LED_RIGHT_PIN</font><font color="#434f54">,</font><font color="#00979c">OUTPUT</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">LED_LEFT_PIN</font><font color="#434f54">,</font><font color="#00979c">HIGH</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">LED_RIGHT_PIN</font><font color="#434f54">,</font><font color="#00979c">HIGH</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">mySerial</font><font color="#434f54">.</font><font color="#d35400">begin</font><font color="#000000">(</font><font color="#000000">9600</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#434f54">&#47;&#47;Serial.begin(9600);</font>
+ &nbsp;<b><font color="#d35400">SPI</font></b><font color="#434f54">.</font><font color="#d35400">begin</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font> &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; Initiate &nbsp;SPI bus</font>
+ &nbsp;<font color="#000000">mfrc522</font><font color="#434f54">.</font><font color="#d35400">PCD_Init</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font> &nbsp;&nbsp;<font color="#434f54">&#47;&#47; Initiate MFRC522</font>
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">tcs</font><font color="#434f54">.</font><font color="#d35400">begin</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">)</font> <font color="#000000">{</font>
+ 
+ &nbsp;&nbsp;<font color="#434f54">&#47;&#47;Serial.println(&#34;Found sensor&#34;);</font>
+ &nbsp;
+ &nbsp;<font color="#434f54">&#47;&#47; send_buffer();</font>
+ &nbsp;
+ &nbsp;<font color="#000000">}</font> <font color="#5e6d03">else</font> <font color="#000000">{</font>
+ &nbsp;<font color="#434f54">&#47;&#47;Serial.println(&#34;No TCS34725 found ... check your connections&#34;);</font>
+ &nbsp;<font color="#5e6d03">while</font> <font color="#000000">(</font><font color="#000000">1</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">100</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">for</font><font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">i</font><font color="#434f54">=</font><font color="#000000">0</font><font color="#000000">;</font><font color="#000000">i</font><font color="#434f54">&lt;</font><font color="#000000">4</font><font color="#000000">;</font><font color="#000000">i</font><font color="#434f54">++</font><font color="#000000">)</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">rightLedState</font><font color="#434f54">=</font><font color="#434f54">!</font><font color="#000000">rightLedState</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">leftLedState</font><font color="#434f54">=</font><font color="#434f54">!</font><font color="#000000">leftLedState</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">LED_LEFT_PIN</font><font color="#434f54">,</font><font color="#000000">leftLedState</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">LED_RIGHT_PIN</font><font color="#434f54">,</font><font color="#000000">rightLedState</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">80</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+<font color="#000000">}</font>
+<font color="#95a5a6">&#47;*</font>
+<font color="#95a5a6">char colorOf(uint16_t r, uint16_t g, uint16_t b, uint16_t c)</font>
+<font color="#95a5a6">{</font>
+<font color="#95a5a6"> &nbsp;if (c &gt; 140)</font>
+<font color="#95a5a6"> &nbsp;{</font>
+<font color="#95a5a6"> &nbsp;return &#39;w&#39;;</font>
+<font color="#95a5a6"> &nbsp;}</font>
+<font color="#95a5a6"> &nbsp;else</font>
+<font color="#95a5a6"> &nbsp;{</font>
+<font color="#95a5a6"> &nbsp;return &#39;b&#39;;</font>
+<font color="#95a5a6"> &nbsp;}</font>
+<font color="#95a5a6">}</font>
+<font color="#95a5a6">*&#47;</font>
+<font color="#00979c">void</font> <font color="#000000">print_color_info</font><font color="#000000">(</font><font color="#00979c">uint16_t</font> <font color="#000000">r</font><font color="#434f54">,</font> <font color="#00979c">uint16_t</font> <font color="#000000">g</font><font color="#434f54">,</font> <font color="#00979c">uint16_t</font> <font color="#000000">b</font><font color="#434f54">,</font> <font color="#00979c">uint16_t</font> <font color="#000000">c</font><font color="#000000">)</font>
+<font color="#000000">{</font>
+ &nbsp;<b><font color="#d35400">Serial</font></b><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;R:&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">printWithNDigits</font><font color="#000000">(</font><font color="#000000">r</font><font color="#434f54">,</font><font color="#000000">5</font><font color="#434f54">,</font><font color="#00979c">&#39; &#39;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<b><font color="#d35400">Serial</font></b><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;, G:&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">printWithNDigits</font><font color="#000000">(</font><font color="#000000">g</font><font color="#434f54">,</font><font color="#000000">5</font><font color="#434f54">,</font><font color="#00979c">&#39; &#39;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<b><font color="#d35400">Serial</font></b><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;, B:&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">printWithNDigits</font><font color="#000000">(</font><font color="#000000">b</font><font color="#434f54">,</font><font color="#000000">5</font><font color="#434f54">,</font><font color="#00979c">&#39; &#39;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<b><font color="#d35400">Serial</font></b><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;, C:&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">printWithNDigits</font><font color="#000000">(</font><font color="#000000">c</font><font color="#434f54">,</font><font color="#000000">5</font><font color="#434f54">,</font><font color="#00979c">&#39; &#39;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<b><font color="#d35400">Serial</font></b><font color="#434f54">.</font><font color="#d35400">println</font><font color="#000000">(</font><font color="#005c5f">&#34;]&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+<font color="#000000">}</font>
+<font color="#00979c">void</font> <font color="#000000">printWithNDigits</font><font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">d</font><font color="#434f54">,</font><font color="#00979c">int</font> <font color="#000000">n</font><font color="#434f54">,</font> <font color="#00979c">char</font> <font color="#000000">space</font><font color="#000000">)</font>
+<font color="#000000">{</font>
+ &nbsp;<font color="#5e6d03">for</font><font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">i</font><font color="#434f54">=</font><font color="#d35400">pow</font><font color="#000000">(</font><font color="#000000">10</font><font color="#434f54">,</font><font color="#000000">n</font><font color="#434f54">-</font><font color="#000000">1</font><font color="#000000">)</font><font color="#000000">;</font><font color="#000000">i</font><font color="#434f54">&gt;</font><font color="#000000">0</font><font color="#000000">;</font><font color="#000000">i</font><font color="#434f54">&#47;=</font><font color="#000000">10</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">d</font><font color="#434f54">&lt;</font><font color="#000000">i</font><font color="#000000">)</font> <b><font color="#d35400">Serial</font></b><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#000000">space</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#434f54">&#47;&#47;Serial.print(d);</font>
+<font color="#000000">}</font>
+<font color="#00979c">void</font> <font color="#000000">send_buffer</font><font color="#000000">(</font><font color="#000000">)</font>
+<font color="#000000">{</font>
+ &nbsp;<font color="#434f54">&#47;&#47;Serial.write(TxBuffer, BUF_LEN);</font>
+ &nbsp;<font color="#000000">mySerial</font><font color="#434f54">.</font><font color="#d35400">write</font><font color="#000000">(</font><font color="#000000">TxBuffer</font><font color="#434f54">,</font> <font color="#000000">BUF_LEN</font><font color="#000000">)</font><font color="#000000">;</font>
+<font color="#000000">}</font>
+<font color="#00979c">bool</font> <font color="#000000">buffer_has_updated</font><font color="#000000">(</font><font color="#000000">)</font>
+<font color="#000000">{</font>
+ &nbsp;<font color="#5e6d03">for</font> <font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">n</font> <font color="#434f54">=</font> <font color="#000000">0</font><font color="#000000">;</font> <font color="#000000">n</font> <font color="#434f54">&lt;</font> <font color="#000000">3</font><font color="#000000">;</font> <font color="#000000">n</font><font color="#434f54">++</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">n</font><font color="#000000">]</font> <font color="#434f54">!=</font> <font color="#000000">oldTxBuffer</font><font color="#000000">[</font><font color="#000000">n</font><font color="#000000">]</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">return</font> <font color="#00979c">true</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#5e6d03">return</font> <font color="#00979c">false</font><font color="#000000">;</font>
+ &nbsp;<font color="#434f54">&#47;&#47;TxBuffer[BUF_LEN] != oldTxBuffer[BUF_LEN];</font>
+<font color="#000000">}</font>
+<font color="#00979c">uint16_t</font> <font color="#000000">oldC</font><font color="#434f54">=</font><font color="#000000">0</font><font color="#000000">;</font>
+<font color="#00979c">void</font> <font color="#5e6d03">loop</font><font color="#000000">(</font><font color="#00979c">void</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#00979c">uint16_t</font> <font color="#000000">r</font><font color="#434f54">,</font> <font color="#000000">g</font><font color="#434f54">,</font> <font color="#000000">b</font><font color="#434f54">,</font> <font color="#000000">c</font><font color="#434f54">,</font> <font color="#000000">colorTemp</font><font color="#434f54">,</font> <font color="#000000">lux</font><font color="#000000">;</font>
+ &nbsp;<font color="#00979c">char</font> <font color="#000000">color</font><font color="#000000">;</font>
+ &nbsp;<font color="#00979c">double</font> <font color="#000000">colorData</font><font color="#434f54">,</font> <font color="#000000">colorMed</font><font color="#000000">;</font>
+ &nbsp;<font color="#00979c">int</font> <font color="#000000">colorDataSend</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">tcs</font><font color="#434f54">.</font><font color="#000000">getRawData</font><font color="#000000">(</font><font color="#434f54">&amp;</font><font color="#000000">r</font><font color="#434f54">,</font> <font color="#434f54">&amp;</font><font color="#000000">g</font><font color="#434f54">,</font> <font color="#434f54">&amp;</font><font color="#000000">b</font><font color="#434f54">,</font> <font color="#434f54">&amp;</font><font color="#000000">c</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;
+ &nbsp;<font color="#00979c">uint16_t</font> <font color="#000000">cMedel</font><font color="#434f54">=</font><font color="#000000">(</font><font color="#000000">oldC</font><font color="#434f54">+</font><font color="#000000">c</font><font color="#000000">)</font><font color="#434f54">&#47;</font><font color="#000000">2</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">oldC</font><font color="#434f54">=</font><font color="#000000">c</font><font color="#000000">;</font>
+ &nbsp;
+ &nbsp;<font color="#434f54">&#47;&#47;colorTemp = tcs.calculateColorTemperature(r, g, b);</font>
+ &nbsp;<font color="#434f54">&#47;&#47;colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);</font>
+ &nbsp;<font color="#434f54">&#47;&#47;lux = tcs.calculateLux(r, g, b);</font>
+ &nbsp;
+ &nbsp;<font color="#00979c">unsigned</font> <font color="#00979c">long</font> <font color="#000000">currentMillis</font> <font color="#434f54">=</font> <font color="#d35400">millis</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font> &nbsp;&nbsp;
+<font color="#95a5a6">&#47;*</font>
+<font color="#95a5a6"> &nbsp;Serial.print(&#39;A&#39;);</font>
+<font color="#95a5a6"> &nbsp;int tagNr =5;</font>
+<font color="#95a5a6"> &nbsp;Serial.write(&#39;0&#39;+tagNr);</font>
+<font color="#95a5a6"> &nbsp;Serial.print(&#34;\tr:&#34;);</font>
+<font color="#95a5a6"> &nbsp;Serial.print(r);</font>
+<font color="#95a5a6"> &nbsp;Serial.print(&#34;\tg:&#34;);</font>
+<font color="#95a5a6"> &nbsp;Serial.print(g);</font>
+<font color="#95a5a6"> &nbsp;Serial.print(&#34;\tb:&#34;);</font>
+<font color="#95a5a6"> &nbsp;Serial.print(b);</font>
+<font color="#95a5a6"> &nbsp;Serial.println(&#34; &#34;);</font>
+<font color="#95a5a6"> &nbsp;*&#47;</font>
+ &nbsp;<font color="#000000">colorMed</font> <font color="#434f54">=</font> <font color="#000000">(</font><font color="#000000">r</font><font color="#434f54">+</font><font color="#000000">g</font><font color="#434f54">+</font><font color="#000000">b</font><font color="#000000">)</font><font color="#434f54">&#47;</font><font color="#000000">3.0</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">colorData</font> <font color="#434f54">=</font> <font color="#000000">(</font><font color="#000000">g</font> <font color="#434f54">-</font> <font color="#000000">colorMed</font><font color="#000000">)</font><font color="#434f54">*</font><font color="#000000">16.5</font><font color="#434f54">-</font><font color="#000000">10.0</font><font color="#000000">;</font>
+ 
+ &nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">colorData</font> <font color="#434f54">&lt;</font> <font color="#000000">150.0</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">colorDataSend</font> <font color="#434f54">=</font> <font color="#000000">cMedel</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#5e6d03">else</font> 
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">colorDataSend</font> <font color="#434f54">=</font> <font color="#000000">255</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">colorDataSend</font><font color="#434f54">&gt;</font><font color="#000000">255</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">colorDataSend</font><font color="#434f54">=</font><font color="#000000">255</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font> <font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">colorDataSend</font><font color="#434f54">&lt;</font><font color="#000000">0</font><font color="#000000">)</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">colorDataSend</font><font color="#434f54">=</font><font color="#000000">0</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;
+ &nbsp;
+ 
+
+ &nbsp;<font color="#434f54">&#47;&#47; Look for new RFID-tag</font>
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font> &nbsp;<font color="#000000">mfrc522</font><font color="#434f54">.</font><font color="#d35400">PICC_IsNewCardPresent</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;<font color="#434f54">&#47;&#47; Select one of the RFID-tag</font>
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font> &nbsp;<font color="#000000">mfrc522</font><font color="#434f54">.</font><font color="#d35400">PICC_ReadCardSerial</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Show UID on serial monitor</font>
+ &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; &nbsp;Serial.print(&#34;UID tag :&#34;);</font>
+ &nbsp;&nbsp;&nbsp;<font color="#00979c">String</font> <font color="#000000">content</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;&#34;</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">for</font> <font color="#000000">(</font><font color="#00979c">byte</font> <font color="#000000">i</font> <font color="#434f54">=</font> <font color="#000000">0</font><font color="#000000">;</font> <font color="#000000">i</font> <font color="#434f54">&lt;</font> <font color="#000000">mfrc522</font><font color="#434f54">.</font><font color="#000000">uid</font><font color="#434f54">.</font><font color="#d35400">size</font><font color="#000000">;</font> <font color="#000000">i</font><font color="#434f54">++</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; Serial.print(mfrc522.uid.uidByte[i] &lt; 0x10 ? &#34; 0&#34; : &#34; &#34;);</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; Serial.print(mfrc522.uid.uidByte[i], HEX);</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">content</font><font color="#434f54">.</font><font color="#d35400">concat</font><font color="#000000">(</font><font color="#00979c">String</font><font color="#000000">(</font><font color="#000000">mfrc522</font><font color="#434f54">.</font><font color="#000000">uid</font><font color="#434f54">.</font><font color="#000000">uidByte</font><font color="#000000">[</font><font color="#000000">i</font><font color="#000000">]</font> <font color="#434f54">&lt;</font> <font color="#000000">0x10</font> <font color="#434f54">?</font> <font color="#005c5f">&#34; 0&#34;</font> <font color="#434f54">:</font> <font color="#005c5f">&#34; &#34;</font><font color="#000000">)</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">content</font><font color="#434f54">.</font><font color="#d35400">concat</font><font color="#000000">(</font><font color="#00979c">String</font><font color="#000000">(</font><font color="#000000">mfrc522</font><font color="#434f54">.</font><font color="#000000">uid</font><font color="#434f54">.</font><font color="#000000">uidByte</font><font color="#000000">[</font><font color="#000000">i</font><font color="#000000">]</font><font color="#434f54">,</font> <font color="#00979c">HEX</font><font color="#000000">)</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Serial.println();</font>
+ &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Serial.print(&#34;Message : &#34;);</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">content</font><font color="#434f54">.</font><font color="#d35400">toUpperCase</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; Loopa array returna n+1 &nbsp;{{&#34;CA CF A9 DF&#34;,&#34;A11&#34;} alltså A11.</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">for</font> <font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">n</font> <font color="#434f54">=</font> <font color="#000000">0</font><font color="#000000">;</font> <font color="#000000">n</font> <font color="#434f54">&lt;</font> <font color="#000000">N_TAGS</font><font color="#000000">;</font> <font color="#000000">n</font><font color="#434f54">++</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00979c">String</font> <font color="#000000">resultString</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;&#34;</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00979c">String</font> <font color="#000000">resultString2</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;&#34;</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00979c">String</font> <font color="#000000">hexfaker</font> <font color="#434f54">=</font> <font color="#00979c">String</font><font color="#000000">(</font><font color="#000000">RFIDtagHEX</font><font color="#000000">[</font><font color="#000000">n</font><font color="#000000">]</font><font color="#000000">[</font><font color="#000000">0</font><font color="#000000">]</font><font color="#434f54">,</font><font color="#00979c">HEX</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">hexfaker</font><font color="#434f54">.</font><font color="#d35400">toUpperCase</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">hexfaker</font><font color="#434f54">.</font><font color="#d35400">length</font><font color="#000000">(</font><font color="#000000">)</font><font color="#434f54">==</font><font color="#000000">1</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00979c">String</font> <font color="#000000">nolla</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;0&#34;</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString</font> <font color="#434f54">=</font> <font color="#000000">resultString2</font><font color="#434f54">+</font><font color="#000000">commonID</font><font color="#000000">[</font><font color="#000000">0</font><font color="#000000">]</font><font color="#434f54">+</font><font color="#000000">nolla</font><font color="#434f54">+</font><font color="#000000">hexfaker</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString2</font> <font color="#434f54">=</font> <font color="#000000">resultString</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString</font> <font color="#434f54">=</font> <font color="#000000">resultString2</font><font color="#434f54">+</font><font color="#000000">commonID</font><font color="#000000">[</font><font color="#000000">0</font><font color="#000000">]</font><font color="#434f54">+</font><font color="#000000">hexfaker</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString2</font> <font color="#434f54">=</font> <font color="#000000">resultString</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">hexfaker</font> <font color="#434f54">=</font> <font color="#00979c">String</font><font color="#000000">(</font><font color="#000000">RFIDtagHEX</font><font color="#000000">[</font><font color="#000000">n</font><font color="#000000">]</font><font color="#000000">[</font><font color="#000000">1</font><font color="#000000">]</font><font color="#434f54">,</font><font color="#00979c">HEX</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">hexfaker</font><font color="#434f54">.</font><font color="#d35400">toUpperCase</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">hexfaker</font><font color="#434f54">.</font><font color="#d35400">length</font><font color="#000000">(</font><font color="#000000">)</font><font color="#434f54">==</font><font color="#000000">1</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#00979c">String</font> <font color="#000000">nolla</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;0&#34;</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString</font> <font color="#434f54">=</font> <font color="#000000">resultString2</font><font color="#434f54">+</font><font color="#000000">commonID</font><font color="#000000">[</font><font color="#000000">1</font><font color="#000000">]</font><font color="#434f54">+</font><font color="#000000">nolla</font><font color="#434f54">+</font><font color="#000000">hexfaker</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString</font> <font color="#434f54">=</font> <font color="#000000">resultString2</font><font color="#434f54">+</font><font color="#000000">commonID</font><font color="#000000">[</font><font color="#000000">1</font><font color="#000000">]</font><font color="#434f54">+</font><font color="#000000">hexfaker</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString2</font> <font color="#434f54">=</font> <font color="#000000">resultString</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">hexfaker</font> <font color="#434f54">=</font> <font color="#00979c">String</font><font color="#000000">(</font><font color="#000000">RFIDtagHEX</font><font color="#000000">[</font><font color="#000000">n</font><font color="#000000">]</font><font color="#000000">[</font><font color="#000000">2</font><font color="#000000">]</font><font color="#434f54">,</font><font color="#00979c">HEX</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">hexfaker</font><font color="#434f54">.</font><font color="#d35400">toUpperCase</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString</font> <font color="#434f54">=</font> <font color="#000000">resultString2</font><font color="#434f54">+</font><font color="#000000">commonID</font><font color="#000000">[</font><font color="#000000">2</font><font color="#000000">]</font><font color="#434f54">+</font><font color="#000000">hexfaker</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString2</font> <font color="#434f54">=</font> <font color="#000000">resultString</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">hexfaker</font> <font color="#434f54">=</font> <font color="#00979c">String</font><font color="#000000">(</font><font color="#000000">RFIDtagHEX</font><font color="#000000">[</font><font color="#000000">n</font><font color="#000000">]</font><font color="#000000">[</font><font color="#000000">3</font><font color="#000000">]</font><font color="#434f54">,</font><font color="#00979c">HEX</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">hexfaker</font><font color="#434f54">.</font><font color="#d35400">toUpperCase</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString</font> <font color="#434f54">=</font> <font color="#000000">resultString2</font><font color="#434f54">+</font><font color="#000000">commonID</font><font color="#000000">[</font><font color="#000000">3</font><font color="#000000">]</font><font color="#434f54">+</font><font color="#000000">hexfaker</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">resultString2</font> <font color="#434f54">=</font> <font color="#000000">resultString</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Serial.print(resultString+&#34;.&#34;);</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">resultString</font> <font color="#434f54">==</font> <font color="#000000">content</font><font color="#434f54">.</font><font color="#d35400">substring</font><font color="#000000">(</font><font color="#000000">1</font><font color="#000000">)</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">0</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">IDnamn</font><font color="#000000">[</font><font color="#000000">n</font><font color="#000000">]</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; Serial.write(IDnamn[n]);</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;
+ &nbsp;<font color="#000000">noCardCounter</font><font color="#434f54">=</font><font color="#000000">0</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font><font color="#000000">{</font>
+ &nbsp;<font color="#000000">noCardCounter</font><font color="#434f54">++</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">noCardCounter</font><font color="#434f54">&gt;=</font><font color="#000000">2</font><font color="#000000">)</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">0</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">0</font><font color="#000000">;</font>
+ &nbsp;
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#000000">}</font>
+<font color="#434f54">&#47;&#47; &nbsp;color = colorOf(r, g, b, c);</font>
+ 
+ &nbsp;<font color="#434f54">&#47;&#47; TxBuffer[1] = color;</font>
+
+
+ 
+ &nbsp;<font color="#00979c">char</font> <font color="#000000">incomingData</font><font color="#000000">;</font>
+ &nbsp;<font color="#434f54">&#47;&#47;Serial.print(incomingData);</font>
+<font color="#434f54">&#47;&#47; mySerial</font>
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">mySerial</font><font color="#434f54">.</font><font color="#d35400">available</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#434f54">&gt;</font> <font color="#000000">0</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; mySerial</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">incomingData</font> <font color="#434f54">=</font> <font color="#000000">mySerial</font><font color="#434f54">.</font><font color="#d35400">read</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">incomingData</font> <font color="#434f54">==</font> <font color="#000000">ERROR_MSG</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">send_buffer</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Serial.print(incomingData);</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">else</font> <font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">incomingData</font> <font color="#434f54">==</font> <font color="#00979c">&#39;?&#39;</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">1</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">colorDataSend</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;send_buffer();</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">else</font> <font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">incomingData</font> <font color="#434f54">==</font> <font color="#00979c">&#39;&gt;&#39;</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">blinkState</font><font color="#434f54">=</font><font color="#000000">1</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Serial.print(incomingData);</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">else</font> <font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">incomingData</font> <font color="#434f54">==</font> <font color="#00979c">&#39;&lt;&#39;</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">blinkState</font><font color="#434f54">=</font><font color="#000000">2</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Serial.print(incomingData);</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font> <font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">incomingData</font> <font color="#434f54">==</font> <font color="#000000">STOP_BLINK</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">blinkState</font><font color="#434f54">=</font><font color="#000000">0</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Serial.print(incomingData);</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">buffer_has_updated</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">0</font><font color="#000000">]</font><font color="#434f54">&gt;</font><font color="#000000">0</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">RFID_blink</font><font color="#434f54">=</font><font color="#00979c">true</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">leftLedState</font><font color="#434f54">=</font><font color="#00979c">HIGH</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">rightLedState</font><font color="#434f54">=</font><font color="#00979c">HIGH</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">previousMillis</font><font color="#434f54">=</font><font color="#000000">currentMillis</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">send_buffer</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">oldTxBuffer</font><font color="#000000">[</font><font color="#000000">0</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">0</font><font color="#000000">]</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">oldTxBuffer</font><font color="#000000">[</font><font color="#000000">1</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">1</font><font color="#000000">]</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">oldTxBuffer</font><font color="#000000">[</font><font color="#000000">2</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">TxBuffer</font><font color="#000000">[</font><font color="#000000">2</font><font color="#000000">]</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; Ta bort om ej vill ha spam</font>
+ &nbsp;&nbsp;<font color="#434f54">&#47;&#47; TxBuffer[0] = 0;</font>
+ &nbsp;<font color="#000000">}</font>
+ 
+ &nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">RFID_blink</font><font color="#434f54">&amp;&amp;</font><font color="#000000">(</font><font color="#000000">currentMillis</font> <font color="#434f54">-</font> <font color="#000000">previousMillis</font><font color="#434f54">&gt;=</font> <font color="#000000">300</font><font color="#000000">)</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;if(currentMillis - previousMillis &gt;= interval)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">leftLedState</font><font color="#434f54">=</font><font color="#00979c">LOW</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">rightLedState</font><font color="#434f54">=</font><font color="#00979c">LOW</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">RFID_blink</font><font color="#434f54">=</font><font color="#00979c">false</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font> <font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">currentMillis</font> <font color="#434f54">-</font> <font color="#000000">previousMillis</font> <font color="#434f54">&gt;=</font> <font color="#000000">interval</font><font color="#000000">)</font>
+ &nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">previousMillis</font> <font color="#434f54">=</font> <font color="#000000">currentMillis</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">blinkState</font><font color="#434f54">==</font><font color="#000000">1</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">rightLedState</font> <font color="#434f54">==</font> <font color="#00979c">LOW</font><font color="#000000">)</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">rightLedState</font><font color="#434f54">=</font><font color="#00979c">HIGH</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">rightLedState</font><font color="#434f54">=</font><font color="#00979c">LOW</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">leftLedState</font><font color="#434f54">=</font><font color="#00979c">LOW</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font> <font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">blinkState</font><font color="#434f54">==</font><font color="#000000">2</font><font color="#000000">)</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font><font color="#000000">(</font><font color="#000000">leftLedState</font> <font color="#434f54">==</font> <font color="#00979c">LOW</font><font color="#000000">)</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">leftLedState</font><font color="#434f54">=</font><font color="#00979c">HIGH</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font><font color="#5e6d03">else</font><font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">leftLedState</font><font color="#434f54">=</font><font color="#00979c">LOW</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">rightLedState</font><font color="#434f54">=</font><font color="#00979c">LOW</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">else</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">leftLedState</font> <font color="#434f54">=</font> <font color="#00979c">LOW</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">rightLedState</font> <font color="#434f54">=</font> <font color="#00979c">LOW</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">LED_LEFT_PIN</font><font color="#434f54">,</font> <font color="#434f54">!</font><font color="#000000">leftLedState</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">LED_RIGHT_PIN</font><font color="#434f54">,</font> <font color="#434f54">!</font><font color="#000000">rightLedState</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;
+ &nbsp;<font color="#434f54">&#47;&#47;print_color_info(r,g,b,c);</font>
+ &nbsp;<font color="#434f54">&#47;&#47;Serial.print(colorData);Serial.print(&#34;, &#34;);</font>
+ &nbsp;<font color="#434f54">&#47;&#47;printWithNDigits(colorDataSend,4,&#39; &#39;);</font>
+ &nbsp;<font color="#434f54">&#47;&#47;Serial.println(&#34; &#34;);</font>
+<font color="#000000">}</font>
+
+</pre>
